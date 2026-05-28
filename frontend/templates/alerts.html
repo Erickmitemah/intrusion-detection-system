@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NetGuard IDS — Alerts</title>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #020408; --surface: #080d14; --surface2: #0d1520;
+      --border: #1a2840; --accent: #00d4ff; --accent2: #ff3d71;
+      --green: #00ff88; --yellow: #ffcc00; --orange: #ff8c00; --purple: #b44fff;
+      --text: #c8d8e8; --text-dim: #4a6080; --text-mid: #8aa0b8;
+      --font-mono: 'Share Tech Mono', monospace; --font-ui: 'Rajdhani', sans-serif;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:var(--bg); color:var(--text); font-family:var(--font-ui); min-height:100vh; display:flex; }
+    .sidebar { width:220px; min-height:100vh; background:var(--surface); border-right:1px solid var(--border); position:fixed; top:0;left:0;bottom:0; z-index:100; padding-top:20px; }
+    .sidebar-logo { padding:0 16px 16px; border-bottom:1px solid var(--border); margin-bottom:12px; font-family:var(--font-mono); color:var(--accent); font-size:18px; letter-spacing:3px; }
+    .nav-item { display:flex; align-items:center; gap:10px; padding:10px 20px; cursor:pointer; transition:all 0.15s; color:var(--text-mid); font-size:14px; font-weight:600; text-decoration:none; border-left:3px solid transparent; }
+    .nav-item:hover, .nav-item.active { background:rgba(0,212,255,0.1); color:var(--accent); border-left-color:var(--accent); }
+    .main { margin-left:220px; flex:1; }
+    .topbar { height:60px; background:var(--surface); border-bottom:1px solid var(--border); display:flex; align-items:center; padding:0 24px; gap:16px; }
+    .topbar-title { font-family:var(--font-mono); font-size:13px; color:var(--accent); letter-spacing:3px; }
+    .content { padding:24px; }
+    .filter-bar { display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap; }
+    .filter-btn { padding:7px 16px; font-family:var(--font-mono); font-size:10px; letter-spacing:2px; border:1px solid var(--border); background:transparent; color:var(--text-dim); cursor:pointer; transition:all 0.15s; }
+    .filter-btn.active, .filter-btn:hover { border-color:var(--accent); color:var(--accent); background:rgba(0,212,255,0.08); }
+    .filter-btn.critical.active { border-color:var(--accent2); color:var(--accent2); background:rgba(255,61,113,0.08); }
+    .filter-btn.high.active { border-color:var(--orange); color:var(--orange); background:rgba(255,140,0,0.08); }
+
+    .alerts-table-wrap { background:var(--surface); border:1px solid var(--border); }
+    .table-header { padding:16px 20px; border-bottom:1px solid var(--border); font-family:var(--font-mono); font-size:11px; color:var(--text-mid); letter-spacing:2px; display:flex; justify-content:space-between; align-items:center; }
+    table { width:100%; border-collapse:collapse; }
+    th { font-family:var(--font-mono); font-size:9px; letter-spacing:2px; color:var(--text-dim); text-align:left; padding:10px 16px; border-bottom:1px solid var(--border); text-transform:uppercase; }
+    td { padding:12px 16px; border-bottom:1px solid rgba(26,40,64,0.5); font-size:13px; }
+    tr:hover td { background:rgba(0,212,255,0.02); }
+    .sev-badge { font-family:var(--font-mono); font-size:9px; padding:3px 8px; border:1px solid; }
+    .sev-critical { color:var(--accent2); border-color:var(--accent2); background:rgba(255,61,113,0.08); }
+    .sev-high { color:var(--orange); border-color:var(--orange); background:rgba(255,140,0,0.08); }
+    .sev-medium { color:var(--yellow); border-color:var(--yellow); background:rgba(255,204,0,0.08); }
+    .sev-low { color:var(--green); border-color:var(--green); background:rgba(0,255,136,0.08); }
+    .sev-info { color:var(--accent); border-color:var(--accent); background:rgba(0,212,255,0.08); }
+    .status-badge { font-family:var(--font-mono); font-size:9px; padding:2px 7px; border-radius:2px; }
+    .status-open { background:rgba(255,61,113,0.15); color:var(--accent2); }
+    .status-investigating { background:rgba(255,204,0,0.15); color:var(--yellow); }
+    .status-resolved { background:rgba(0,255,136,0.1); color:var(--green); }
+    .ip-text { font-family:var(--font-mono); font-size:11px; color:var(--text-mid); }
+    .btn-sm { padding:4px 10px; font-family:var(--font-mono); font-size:9px; letter-spacing:1px; cursor:pointer; border:1px solid; background:transparent; transition:all 0.15s; }
+    .btn-ack { color:var(--yellow); border-color:var(--yellow); }
+    .btn-ack:hover { background:rgba(255,204,0,0.1); }
+    .btn-resolve { color:var(--green); border-color:var(--green); }
+    .btn-resolve:hover { background:rgba(0,255,136,0.1); }
+    .pagination { display:flex; gap:8px; margin-top:16px; justify-content:center; }
+    .page-btn { padding:6px 12px; font-family:var(--font-mono); font-size:10px; border:1px solid var(--border); background:transparent; color:var(--text-dim); cursor:pointer; }
+    .page-btn.active, .page-btn:hover { border-color:var(--accent); color:var(--accent); }
+    .risk-num { font-family:var(--font-mono); font-size:13px; font-weight:bold; }
+  </style>
+</head>
+<body>
+<nav class="sidebar">
+  <div class="sidebar-logo">🛡 NETGUARD</div>
+  <a href="{{ url_for('dashboard.index') }}" class="nav-item">⬡ Dashboard</a>
+  <a href="{{ url_for('dashboard.alerts') }}" class="nav-item active">⚠ Alerts</a>
+  <a href="{{ url_for('dashboard.models') }}" class="nav-item">◎ ML Models</a>
+  <a href="{{ url_for('reports.index') }}" class="nav-item">≡ Reports</a>
+  <a href="{{ url_for('auth.logout') }}" class="nav-item">⏻ Logout</a>
+</nav>
+
+<div class="main">
+  <div class="topbar">
+    <span class="topbar-title">SECURITY ALERTS — INCIDENT MANAGEMENT</span>
+    <span style="margin-left:auto;font-family:var(--font-mono);font-size:11px;color:var(--text-dim)" id="alertCount">Loading...</span>
+  </div>
+  <div class="content">
+    <div class="filter-bar">
+      <button class="filter-btn active" onclick="filterAlerts('all', this)">ALL</button>
+      <button class="filter-btn critical" onclick="filterAlerts('critical', this)">CRITICAL</button>
+      <button class="filter-btn high" onclick="filterAlerts('high', this)">HIGH</button>
+      <button class="filter-btn" onclick="filterAlerts('medium', this)">MEDIUM</button>
+      <button class="filter-btn" onclick="filterAlerts('low', this)">LOW</button>
+      <button class="filter-btn" onclick="filterAlerts('open', this)" style="margin-left:auto">OPEN</button>
+      <button class="filter-btn" onclick="filterAlerts('resolved', this)">RESOLVED</button>
+    </div>
+
+    <div class="alerts-table-wrap">
+      <div class="table-header">
+        <span>SECURITY EVENTS LOG</span>
+        <span id="pageInfo" style="color:var(--text-dim)">—</span>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>#ID</th>
+            <th>Severity</th>
+            <th>Type</th>
+            <th>Source IP</th>
+            <th>Destination</th>
+            <th>Risk Score</th>
+            <th>Detected</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="alertsBody">
+          <tr><td colspan="9" style="text-align:center;color:var(--text-dim);padding:40px;font-family:var(--font-mono)">Loading alerts...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pagination" id="pagination"></div>
+  </div>
+</div>
+
+<script>
+let currentFilter = { severity: null, status: null };
+let currentPage = 1;
+
+async function loadAlerts(page = 1) {
+  let url = `/api/alerts?page=${page}&per_page=15`;
+  if (currentFilter.severity) url += `&severity=${currentFilter.severity}`;
+  if (currentFilter.status) url += `&status=${currentFilter.status}`;
+
+  try {
+    const r = await fetch(url);
+    const d = await r.json();
+
+    document.getElementById('alertCount').textContent = `${d.total} total alerts`;
+    document.getElementById('pageInfo').textContent = `Page ${d.current_page} of ${d.pages}`;
+
+    const tbody = document.getElementById('alertsBody');
+    if (!d.alerts.length) {
+      tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--text-dim);padding:40px;font-family:var(--font-mono)">No alerts found</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = d.alerts.map(a => {
+      const riskColor = a.risk_score >= 80 ? 'var(--accent2)' : a.risk_score >= 60 ? 'var(--orange)' : a.risk_score >= 40 ? 'var(--yellow)' : 'var(--green)';
+      const ts = new Date(a.timestamp).toLocaleString();
+      return `<tr>
+        <td style="font-family:var(--font-mono);font-size:11px;color:var(--text-dim)">#${a.id}</td>
+        <td><span class="sev-badge sev-${a.severity}">${(a.severity || 'info').toUpperCase()}</span></td>
+        <td style="font-weight:600">${a.alert_type || 'Unknown'}</td>
+        <td class="ip-text">${a.source_ip || '—'}</td>
+        <td class="ip-text">${a.destination_ip || '—'}</td>
+        <td><span class="risk-num" style="color:${riskColor}">${(a.risk_score || 0).toFixed(1)}</span></td>
+        <td style="font-family:var(--font-mono);font-size:10px;color:var(--text-dim)">${ts}</td>
+        <td><span class="status-badge status-${a.status}">${(a.status || 'open').toUpperCase()}</span></td>
+        <td style="display:flex;gap:6px;">
+          ${a.status === 'open' ? `<button class="btn-sm btn-ack" onclick="ackAlert(${a.id})">ACK</button>` : ''}
+          ${a.status !== 'resolved' ? `<button class="btn-sm btn-resolve" onclick="resolveAlert(${a.id})">RESOLVE</button>` : ''}
+        </td>
+      </tr>`;
+    }).join('');
+
+    // Pagination
+    const pages = document.getElementById('pagination');
+    pages.innerHTML = Array.from({length: Math.min(d.pages, 10)}, (_, i) => i + 1)
+      .map(p => `<button class="page-btn ${p === currentPage ? 'active' : ''}" onclick="loadAlerts(${p})">${p}</button>`)
+      .join('');
+  } catch(e) {
+    console.error(e);
+  }
+}
+
+function filterAlerts(filter, btn) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentFilter = {};
+  if (['critical','high','medium','low'].includes(filter)) currentFilter.severity = filter;
+  else if (['open','investigating','resolved'].includes(filter)) currentFilter.status = filter;
+  currentPage = 1;
+  loadAlerts(1);
+}
+
+async function ackAlert(id) {
+  await fetch(`/api/alerts/${id}/acknowledge`, { method: 'POST' });
+  loadAlerts(currentPage);
+}
+
+async function resolveAlert(id) {
+  await fetch(`/api/alerts/${id}/resolve`, { method: 'POST' });
+  loadAlerts(currentPage);
+}
+
+loadAlerts();
+setInterval(() => loadAlerts(currentPage), 10000);
+</script>
+</body>
+</html>

@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NetGuard IDS — Login</title>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #020408;
+      --surface: #0a0f1a;
+      --surface2: #111827;
+      --border: #1f2d40;
+      --accent: #00d4ff;
+      --accent2: #ff3d71;
+      --green: #00ff88;
+      --text: #c8d8e8;
+      --text-dim: #4a6080;
+      --font-mono: 'Share Tech Mono', monospace;
+      --font-ui: 'Rajdhani', sans-serif;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-ui);
+      overflow: hidden;
+    }
+
+    /* Animated grid background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      animation: gridScroll 20s linear infinite;
+    }
+    @keyframes gridScroll {
+      0% { background-position: 0 0; }
+      100% { background-position: 40px 40px; }
+    }
+
+    /* Scanning line */
+    body::after {
+      content: '';
+      position: fixed;
+      left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      animation: scanLine 4s linear infinite;
+      opacity: 0.3;
+    }
+    @keyframes scanLine {
+      0% { top: -2px; }
+      100% { top: 100vh; }
+    }
+
+    .login-container {
+      position: relative;
+      z-index: 10;
+      width: 420px;
+    }
+
+    .logo-area {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .logo-hex {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 16px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .logo-hex svg {
+      width: 80px;
+      height: 80px;
+      animation: hexPulse 3s ease-in-out infinite;
+    }
+
+    @keyframes hexPulse {
+      0%, 100% { filter: drop-shadow(0 0 8px rgba(0,212,255,0.5)); }
+      50% { filter: drop-shadow(0 0 20px rgba(0,212,255,0.9)); }
+    }
+
+    .logo-inner-icon {
+      position: absolute;
+      font-size: 28px;
+    }
+
+    .logo-title {
+      font-family: var(--font-mono);
+      font-size: 28px;
+      color: var(--accent);
+      letter-spacing: 6px;
+      text-transform: uppercase;
+    }
+
+    .logo-sub {
+      font-size: 11px;
+      letter-spacing: 4px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      margin-top: 4px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-top: 2px solid var(--accent);
+      padding: 36px;
+      position: relative;
+      clip-path: polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 0 100%);
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(0,212,255,0.03) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    .card-header {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--accent);
+      letter-spacing: 3px;
+      margin-bottom: 28px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-header::before {
+      content: '//';
+      color: var(--text-dim);
+    }
+
+    .alert-error {
+      background: rgba(255,61,113,0.1);
+      border: 1px solid rgba(255,61,113,0.3);
+      border-left: 3px solid var(--accent2);
+      color: #ff8098;
+      padding: 10px 14px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      margin-bottom: 20px;
+    }
+
+    .field {
+      margin-bottom: 20px;
+    }
+
+    .field label {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 2px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .field input {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-bottom: 1px solid var(--accent);
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 14px;
+      padding: 12px 14px;
+      outline: none;
+      transition: all 0.2s;
+    }
+
+    .field input:focus {
+      border-color: var(--accent);
+      background: rgba(0,212,255,0.04);
+      box-shadow: 0 0 0 1px rgba(0,212,255,0.2);
+    }
+
+    .field input::placeholder { color: var(--text-dim); }
+
+    .btn-login {
+      width: 100%;
+      background: transparent;
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      letter-spacing: 4px;
+      padding: 14px;
+      cursor: pointer;
+      text-transform: uppercase;
+      transition: all 0.2s;
+      position: relative;
+      overflow: hidden;
+      margin-top: 8px;
+    }
+
+    .btn-login::before {
+      content: '';
+      position: absolute;
+      left: -100%;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(0,212,255,0.1), transparent);
+      transition: left 0.4s;
+    }
+
+    .btn-login:hover {
+      background: rgba(0,212,255,0.1);
+      box-shadow: 0 0 20px rgba(0,212,255,0.2);
+    }
+
+    .btn-login:hover::before { left: 100%; }
+
+    .system-info {
+      margin-top: 28px;
+      border-top: 1px solid var(--border);
+      padding-top: 16px;
+    }
+
+    .sys-line {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-dim);
+      margin-bottom: 4px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .sys-line .val {
+      color: var(--green);
+    }
+
+    .status-dot {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+      margin-right: 6px;
+      animation: blink 2s infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    .corner-deco {
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      width: 40px;
+      height: 40px;
+      border-right: 2px solid var(--accent);
+      border-bottom: 2px solid var(--accent);
+      opacity: 0.4;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <div class="logo-area">
+      <div class="logo-hex">
+        <svg viewBox="0 0 100 100">
+          <polygon points="50,5 93,27.5 93,72.5 50,95 7,72.5 7,27.5"
+                   fill="none" stroke="#00d4ff" stroke-width="2"
+                   opacity="0.8"/>
+          <polygon points="50,15 83,32.5 83,67.5 50,85 17,67.5 17,32.5"
+                   fill="none" stroke="#00d4ff" stroke-width="1"
+                   opacity="0.4"/>
+        </svg>
+        <span class="logo-inner-icon">🛡</span>
+      </div>
+      <div class="logo-title">NetGuard</div>
+      <div class="logo-sub">Intrusion Detection System v2.4</div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">ADMINISTRATOR AUTHENTICATION</div>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+          <div class="alert-error">⚠ {{ message }}</div>
+        {% endfor %}
+      {% endwith %}
+
+      <form method="POST">
+        <div class="field">
+          <label>Username / Operator ID</label>
+          <input type="text" name="username" placeholder="admin" required autocomplete="username">
+        </div>
+        <div class="field">
+          <label>Access Credential</label>
+          <input type="password" name="password" placeholder="••••••••••••" required autocomplete="current-password">
+        </div>
+        <button type="submit" class="btn-login">[ AUTHENTICATE ]</button>
+      </form>
+
+      <div class="system-info">
+        <div class="sys-line">
+          <span><span class="status-dot"></span>SYSTEM STATUS</span>
+          <span class="val">OPERATIONAL</span>
+        </div>
+        <div class="sys-line">
+          <span>IDS ENGINE</span>
+          <span class="val">ACTIVE</span>
+        </div>
+        <div class="sys-line">
+          <span>THREAT LEVEL</span>
+          <span style="color: #ffa500;">ELEVATED</span>
+        </div>
+      </div>
+
+      <div class="corner-deco"></div>
+    </div>
+  </div>
+</body>
+</html>
