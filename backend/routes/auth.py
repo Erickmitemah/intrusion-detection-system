@@ -1,5 +1,5 @@
 """Authentication Blueprint"""
-from flask import Blueprint, render_template, redirect, url_for, request, flash
+from flask import Blueprint, render_template, redirect, url_for, request, flash, current_app
 from flask_login import login_user, logout_user, login_required, current_user
 from datetime import datetime
 from backend.extensions import db
@@ -16,12 +16,25 @@ def login():
         username = request.form.get('username', '').strip()
         password = request.form.get('password', '')
         user = User.query.filter_by(username=username).first()
-        if user and user.check_password(password) and user.is_active:
-            user.last_login = datetime.utcnow()
-            db.session.commit()
-            login_user(user, remember=True)
-            return redirect(url_for('dashboard.index'))
-        flash('Invalid credentials', 'error')
+        error_message = None
+
+        if user:
+            if not user.is_active:
+                error_message = 'Account is inactive'
+            elif not user.check_password(password):
+                error_message = 'Incorrect password'
+            else:
+                user.last_login = datetime.utcnow()
+                db.session.commit()
+                login_user(user, remember=True)
+                return redirect(url_for('dashboard.index'))
+        else:
+            error_message = 'Username not found'
+
+        if current_app.debug:
+            flash(error_message, 'error')
+        else:
+            flash('Invalid credentials', 'error')
     return render_template('login.html')
 
 

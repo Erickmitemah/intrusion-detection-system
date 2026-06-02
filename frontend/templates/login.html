@@ -185,6 +185,36 @@
       transition: all 0.2s;
     }
 
+    .field.password-field {
+      position: relative;
+    }
+
+    .password-wrapper {
+      position: relative;
+    }
+
+    .password-wrapper input {
+      padding-right: 40px;
+    }
+
+    .password-toggle {
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: transparent;
+      border: none;
+      color: var(--text-dim);
+      cursor: pointer;
+      font-size: 16px;
+      padding: 0;
+      line-height: 1;
+    }
+
+    .password-toggle:hover {
+      color: var(--accent);
+    }
+
     .field input:focus {
       border-color: var(--accent);
       background: rgba(0,212,255,0.04);
@@ -306,9 +336,12 @@
           <label>Username / Operator ID</label>
           <input type="text" name="username" placeholder="admin" required autocomplete="username">
         </div>
-        <div class="field">
+        <div class="field password-field">
           <label>Access Credential</label>
-          <input type="password" name="password" placeholder="••••••••••••" required autocomplete="current-password">
+          <div class="password-wrapper">
+            <input type="password" name="password" placeholder="••••••••••••" required autocomplete="current-password">
+            <button type="button" class="password-toggle" aria-label="Toggle password visibility">👁️</button>
+          </div>
         </div>
         <button type="submit" class="btn-login">[ AUTHENTICATE ]</button>
       </form>
@@ -331,5 +364,17 @@
       <div class="corner-deco"></div>
     </div>
   </div>
+  <script>
+    const toggleButton = document.querySelector('.password-toggle');
+    const passwordInput = document.querySelector('input[name="password"]');
+
+    if (toggleButton && passwordInput) {
+      toggleButton.addEventListener('click', () => {
+        const isHidden = passwordInput.type === 'password';
+        passwordInput.type = isHidden ? 'text' : 'password';
+        toggleButton.textContent = isHidden ? '🙈' : '👁️';
+      });
+    }
+  </script>
 </body>
 </html>

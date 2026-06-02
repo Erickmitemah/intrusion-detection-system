@@ -10,12 +10,19 @@ import logging
 
 def create_app(config_name='development'):
     app = Flask(__name__,
+                instance_relative_config=True,
                 template_folder='frontend/templates',
                 static_folder='frontend/static')
 
+    # Ensure instance folder exists and store the SQLite DB there
+    os.makedirs(app.instance_path, exist_ok=True)
+
     # Configuration
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'netguard-ids-secret-key-2024')
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///ids_database.db'
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
+        'DATABASE_URL',
+        f"sqlite:///{os.path.join(app.instance_path, 'ids_database.db')}"
+    )
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024
 
